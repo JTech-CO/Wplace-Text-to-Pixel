@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wplace Text to Pixel</title>
+  <!-- 원본 사이트: https://recette1.github.io/text-image-generator/ -->
+  <!-- 원본 사이트 글: https://gall.dcinside.com/mgallery/board/view/?id=wplacelive&no=15993&page=1 -->
+  <!-- 일부 수정한 사람: JTech_CO -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <style>
+    /* 색상 */
+    :root {
+      --bg: #ececec;
+      --fg: #111111;
+      --panel-bg: #ffffff;
+      --muted: #666666;
+      --btn-bg: #f0f0f0;
+      --btn-bg-hover: #e0e0e0;
+      --btn-border: #999999;
+      --window-border: #aaaaaa;
+      --canvas-bg: #ffffff;
+      --canvas-border: #999999;
+      --input-border: #999999;
+      --track-bg: #cccccc;
+      --thumb-bg: #f0f0f0;
+    }
+
+    /* 시스템 설정 다크 테마 반영 */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121212;
+        --fg: #eaeaea;
+        --panel-bg: #1b1b1b;
+        --muted: #aaaaaa;
+        --btn-bg: #2a2a2a;
+        --btn-bg-hover: #333333;
+        --btn-border: #555555;
+        --window-border: #333333;
+        --canvas-bg: #111111;
+        --canvas-border: #444444;
+        --input-border: #555555;
+        --track-bg: #444444;
+        --thumb-bg: #2a2a2a;
+      }
+    }
+
+    /* 사용자 토글 */
+    body[data-theme="light"] {
+      --bg: #ececec;
+      --fg: #111111;
+      --panel-bg: #ffffff;
+      --muted: #666666;
+      --btn-bg: #f0f0f0;
+      --btn-bg-hover: #e0e0e0;
+      --btn-border: #999999;
+      --window-border: #aaaaaa;
+      --canvas-bg: #ffffff;
+      --canvas-border: #999999;
+      --input-border: #999999;
+      --track-bg: #cccccc;
+      --thumb-bg: #f0f0f0;
+    }
+
+    body[data-theme="dark"] {
+      --bg: #121212;
+      --fg: #eaeaea;
+      --panel-bg: #1b1b1b;
+      --muted: #aaaaaa;
+      --btn-bg: #2a2a2a;
+      --btn-bg-hover: #333333;
+      --btn-border: #555555;
+      --window-border: #333333;
+      --canvas-bg: #111111;
+      --canvas-border: #444444;
+      --input-border: #555555;
+      --track-bg: #444444;
+      --thumb-bg: #2a2a2a;
+    }
+
+    /* --- 기본 스타일 --- */
+    body {
+      font-family: 'VT323', monospace;
+      padding: 16px;
+      text-align: center;
+      background: var(--bg);
+      color: var(--fg);
+      font-size: 20px;
+      line-height: 1.4;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 16px;
+      color: var(--fg);
+    }
+    
+    a {
+      color: var(--fg);
+    }
+    
+    small {
+      color: var(--muted);
+      font-size: 16px;
+      display: block;
+      margin-top: 4px;
+    }
+    
+    label {
+      font-size: 20px;
+      color: var(--fg);
+    }
+    
+    /* --- 픽셀 UI --- */
+    button {
+      background: var(--btn-bg);
+      border: 2px outset var(--btn-border);
+      padding: 8px 16px;
+      border-radius: 0;
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--fg);
+      font-family: 'VT323', monospace;
+      box-shadow: none;
+    }
+    button:hover { background: var(--btn-bg-hover); }
+    button:active { border-style: inset; }
+
+    textarea,
+    input[type="text"] {
+      background: var(--panel-bg);
+      color: var(--fg);
+      border: 2px inset var(--input-border);
+      border-radius: 0;
+      padding: 8px;
+      font-family: 'VT323', monospace;
+      font-size: 20px;
+      box-shadow: none;
+    }
+    
+    textarea {
+      width: 100%;
+      height: 120px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    input[type="color"] {
+      background: var(--panel-bg);
+      border: 2px inset var(--input-border);
+      border-radius: 0;
+      padding: 2px;
+      width: 40px;
+      height: 32px;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+
+    /* --- 픽셀 슬라이더 --- */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 20px;
+      background: transparent;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+
+    /* Track */
+    input[type="range"]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 8px;
+      background: var(--track-bg);
+      border: 2px inset var(--input-border);
+      border-radius: 0;
+    }
+    input[type="range"]::-moz-range-track {
+      width: 100%;
+      height: 8px;
+      background: var(--track-bg);
+      border: 2px inset var(--input-border);
+      border-radius: 0;
+    }
+
+    /* Thumb */
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      border: 2px outset var(--btn-border);
+      height: 20px;
+      width: 12px;
+      background: var(--thumb-bg);
+      border-radius: 0;
+      margin-top: -8px;
+    }
+    input[type="range"]::-moz-range-thumb {
+      border: 2px outset var(--btn-border);
+      height: 20px;
+      width: 12px;
+      background: var(--thumb-bg);
+      border-radius: 0;
+    }
+
+    /* --- 레이아웃 --- */
+    .app-container {
+      max-width: 500px;
+      margin: 0 auto;
+      border: 2px outset var(--window-border);
+      background: var(--bg);
+      padding: 12px;
+    }
+    
+    .panel {
+      border: 2px inset var(--window-border);
+      padding: 12px;
+      margin-bottom: 12px;
+      background: var(--panel-bg);
+      text-align: left;
+    }
+    
+    .panel-title {
+      font-size: 22px;
+      margin-top: 0;
+      margin-bottom: 10px;
+      padding-bottom: 4px;
+      border-bottom: 2px solid var(--input-border);
+    }
+    
+    .text-input-panel {
+      text-align: center;
+    }
+    .text-input-panel button {
+      margin-top: 8px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 130px 1fr 50px;
+      align-items: center;
+      gap: 10px;
+    }
+    .controls-grid label {
+      margin: 0;
+      text-align: right;
+    }
+    .controls-grid strong {
+      text-align: left;
+      padding-left: 10px;
+      color: var(--fg);
+    }
+    /* --- Wplace 색상 팔레트 --- */
+    .color-palette-container {
+      margin-top: 15px;
+    }
+    .color-palette-container > label {
+      display: block;
+      text-align: left;
+      margin-bottom: 5px;
+      font-size: 20px;
+    }
+    .palette-group {
+      margin-bottom: 10px;
+    }
+    .palette-title {
+      display: block;
+      font-size: 18px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .palette-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--input-border);
+      cursor: pointer;
+      border-radius: 0;
+      box-sizing: border-box;
+      background-clip: padding-box;
+    }
+    .color-swatch.selected {
+      border: 4px solid var(--fg);
+      outline: 1px solid var(--bg);
+    }
+    .color-swatch:hover {
+      opacity: 0.8;
+    }
+
+    .canvas-panel {
+      text-align: center;
+    }
+    #canvas {
+      display: block;
+      margin: 0 auto 12px auto;
+      image-rendering: pixelated;
+      background: var(--canvas-bg);
+      border: 2px inset var(--canvas-border);
+    }
+
+    #statusBanner {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--bg);
+      border: 2px inset var(--input-border);
+      color: var(--fg);
+      font-size: 18px;
+      margin: 0 auto 12px auto;
+      max-width: fit-content;
+    }
+    
+    #downloadLink {
+      display: none;
+      font-size: 20px;
+      text-decoration: underline;
+    }
+
+    .theme-switcher {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 1000;
+      display: flex;
+      gap: 6px;
+    }
+    .theme-switcher button {
+      border-radius: 0;
+      font-size: 16px;
+      padding: 6px 10px;
+    }
+    
+    .app-footer {
+      margin-top: 20px;
+      padding-top: 12px;
+      border-top: 2px solid var(--btn-border);
+      font-size: 18px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="theme-switcher">
+    <button id="toggleThemeBtn" title="라이트/다크 전환"></button>
+  </div>
+
+  <div class="app-container">
+    <h1>Wplace Text to Pixel</h1>
+
+    <!-- --- 텍스트 입력 --- -->
+    <div class="panel text-input-panel">
+      <textarea id="textInput" placeholder="이곳에 텍스트를 입력하세요.&#10;여러 줄 입력 가능합니다."></textarea>
+      <button id="generateBtn">도트 생성</button>
+      <small>Wplace 도트 생성 (Ctrl+Enter) · Enter는 줄바꿈</small>
+    </div>
+
+    <!-- --- 설정 --- -->
+    <div class="panel">
+      <h2 class="panel-title">설정</h2>
+      <div class="controls-grid">
+        <label for="letterSpacing">글자간격:</label>
+        <input id="letterSpacing" type="range" min="0" max="10" value="1">
+        <strong id="letterSpacingVal">1</strong>
+
+        <label for="spaceWidth">공백 너비:</label>
+        <input id="spaceWidth" type="range" min="0" max="50" value="4">
+        <strong id="spaceWidthVal">4</strong>
+
+        <label for="lineSpacing">줄 간격:</label>
+        <input id="lineSpacing" type="range" min="0" max="40" value="1">
+        <strong id="lineSpacingVal">1</strong>
+
+        <label for="displayScale">화면 배율:</label>
+        <input id="displayScale" type="range" min="1" max="10" value="2" step="1">
+        <strong id="displayScaleVal">2x</strong>
+        
+        <label for="fontHeight">글자 높이:</label>
+        <input id="fontHeight" type="range" min="5" max="21" value="7" step="2">
+        <strong id="fontHeightVal">7</strong>
+      </div>
+
+      <!-- --- Wplace 색상 팔레트 --- -->
+      <div class="color-palette-container">
+        <label id="color-label">도트 색상:</label>
+        <div class="palette-group">
+          <span class="palette-title">무료 색상</span>
+          <div id="free-palette" class="palette-grid">
+          </div>
+        </div>
+        <div class="palette-group">
+          <span class="palette-title">구매 색상</span>
+          <div id="purchased-palette" class="palette-grid">
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- --- 결과 --- -->
+    <div class="panel canvas-panel">
+       <h2 class="panel-title">결과</h2>
+      <canvas id="canvas" width="10" height="10"></canvas>
+      <div id="statusBanner">준비</div>
+      <a id="downloadLink" download="wplace_pixels.png">이미지 다운로드</a>
+    </div>
+
+    <footer class="app-footer">
+      <a href="https://wplace.live" target="_blank">Wplace.live</a>
+    </footer>
+  </div>
+
+
+  <!-- 토글 스크립트 -->
+  <script>
+    (function() {
+      const btn = document.getElementById('toggleThemeBtn');
+      if (!btn) return;
+      
+      const media = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+      const saved = localStorage.getItem('theme');
+      const prefersDark = media && media.matches;
+
+      function setBtnLabel(theme) {
+        btn.textContent = theme === 'dark' ? '라이트 모드' : '다크 모드';
+        btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+      }
+
+      function applyTheme(theme, persist) {
+        document.body.dataset.theme = theme;
+        setBtnLabel(theme);
+        if (persist) localStorage.setItem('theme', theme);
+      }
+
+      const initial = saved || (prefersDark ? 'dark' : 'light');
+      applyTheme(initial, false);
+
+      if (media && media.addEventListener && !saved) {
+        media.addEventListener('change', e => {
+          if (!localStorage.getItem('theme')) applyTheme(e.matches ? 'dark' : 'light', false);
+        });
+      }
+
+      btn.addEventListener('click', () => {
+        const current = document.body.dataset.theme === 'dark' ? 'dark' : 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        applyTheme(next, true);
+      });
+    })();
+  </script>
+
+  <!-- 렌더링 스크립트 -->
+  <script type="module">
+    const FONT_DATA = {
+      'A': ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+      'B': ['11110', '10001', '10001', '11110', '10001', '10001', '11110'],
+      'C': ['01110', '10001', '10000', '10000', '10000', '10001', '01110'],
+      'D': ['11110', '10001', '10001', '10001', '10001', '10001', '11110'],
+      'E': ['11111', '10000', '10000', '11110', '10000', '10000', '11111'],
+      'F': ['11111', '10000', '10000', '11110', '10000', '10000', '10000'],
+      'G': ['01110', '10001', '10000', '10111', '10001', '10001', '01110'],
+      'H': ['10001', '10001', '10001', '11111', '10001', '10001', '10001'],
+      'I': ['01110', '00100', '00100', '00100', '00100', '00100', '01110'],
+      'J': ['00111', '00010', '00010', '00010', '00010', '10010', '01100'],
+      'K': ['10001', '10010', '10100', '11000', '10100', '10010', '10001'],
+      'L': ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
+      'M': ['10001', '11011', '10101', '10001', '10001', '10001', '10001'],
+      'N': ['10001', '11001', '10101', '10011', '10001', '10001', '10001'],
+      'O': ['01110', '10001', '10001', '10001', '10001', '10001', '01110'],
+      'P': ['11110', '10001', '10001', '11110', '10000', '10000', '10000'],
+      'Q': ['01110', '10001', '10001', '10001', '10101', '10010', '01111'],
+      'R': ['11110', '10001', '10001', '11110', '10010', '10001', '10001'],
+      'S': ['01110', '10001', '10000', '01110', '00001', '10001', '01110'],
+      'T': ['11111', '00100', '00100', '00100', '00100', '00100', '00100'],
+      'U': ['10001', '10001', '10001', '10001', '10001', '10001', '01110'],
+      'V': ['10001', '10001', '10001', '10001', '10001', '01010', '00100'],
+      'W': ['10001', '10001', '10001', '10001', '10101', '11011', '10001'],
+      'X': ['10001', '10001', '01010', '00100', '01010', '10001', '10001'],
+      'Y': ['10001', '10001', '01010', '00100', '00100', '00100', '00100'],
+      'Z': ['11111', '00001', '00010', '00100', '01000', '10000', '11111'],
+      '0': ['01110', '10001', '10101', '10101', '10101', '10001', '01110'],
+      '1': ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
+      '2': ['01110', '10001', '00001', '00110', '01000', '10000', '11111'],
+      '3': ['01110', '10001', '00001', '01110', '00001', '10001', '01110'],
+      '4': ['00110', '01010', '10010', '10010', '11111', '00010', '00010'],
+      '5': ['11111', '10000', '10000', '11110', '00001', '10001', '01110'],
+      '6': ['01110', '10001', '10000', '11110', '10001', '10001', '01110'],
+      '7': ['11111', '00001', '00010', '00100', '01000', '01000', '01000'],
+      '8': ['01110', '10001', '10001', '01110', '10001', '10001', '01110'],
+      '9': ['01110', '10001', '10001', '01111', '00001', '10001', '01110'],
+      '.': ['00000', '00000', '00000', '00000', '00000', '01100', '01100'],
+      ',': ['00000', '00000', '00000', '00000', '00000', '01100', '01100'],
+      '!': ['00100', '00100', '00100', '00100', '00100', '00000', '00100'],
+      '?': ['01110', '10001', '00001', '00110', '00100', '00000', '00100'],
+      "'": ['00100', '00100', '00000', '00000', '00000', '00000', '00000'],
+      '"': ['01010', '01010', '00000', '00000', '00000', '00000', '00000'],
+      '(': ['00100', '01000', '10000', '10000', '10000', '01000', '00100'],
+      ')': ['01000', '00100', '00010', '00010', '00010', '00100', '01000'],
+      '-': ['00000', '00000', '00000', '11111', '00000', '00000', '00000'],
+      '+': ['00000', '00100', '00100', '11111', '00100', '00100', '00000'],
+      '=': ['00000', '00000', '11111', '00000', '11111', '00000', '00000'],
+      '/': ['00001', '00010', '00100', '01000', '10000', '00000', '00000'],
+      '\\': ['10000', '01000', '00100', '00010', '00001', '00000', '00000'],
+      '_': ['00000', '00000', '00000', '00000', '00000', '00000', '11111'],
+      ':': ['00000', '00000', '01100', '00000', '01100', '00000', '00000'],
+      ';': ['00000', '00000', '01100', '00000', '01100', '01000', '01000'],
+      'DEFAULT': ['11111', '11111', '11111', '11111', '11111', '11111', '11111'],
+      '가': ['11110', '10101', '10101', '11111', '10101', '10101', '11110'],
+      '나': ['10001', '10001', '11101', '10101', '10101', '10111', '10000'],
+      '다': ['11100', '10100', '10100', '11111', '10101', '10101', '11110'],
+      '라': ['11110', '10001', '11110', '10000', '10000', '10000', '10000'],
+      '마': ['11111', '10000', '10000', '11111', '10001', '10001', '11111'],
+      '바': ['10001', '10001', '10001', '11111', '10001', '10001', '11111'],
+      '사': ['01110', '10001', '00100', '00100', '00100', '00100', '00000'],
+      '아': ['01110', '10001', '10001', '01110', '00100', '00100', '00100'],
+      '자': ['01110', '10001', '00100', '01110', '00100', '00100', '00000'],
+      '차': ['01110', '10001', '00100', '01110', '10001', '10001', '00000'],
+      '카': ['11111', '10000', '10000', '11111', '00100', '00100', '00100'],
+      '타': ['11111', '00100', '00100', '11111', '00100', '00100', '00100'],
+      '파': ['11111', '10001', '11111', '00100', '00100', '00100', '00000'],
+      '하': ['01110', '10001', '01110', '10001', '01110', '00000', '00000'],
+    };
+    const FONT_WIDTH = 5;
+
+    // --- Wplace 색상 리스트 ---
+    const WPLACE_COLORS = {
+      free: [
+        { name: 'Black', hex: '#000000' },
+        { name: 'Dark Gray', hex: '#3c3c3c' },
+        { name: 'Gray', hex: '#787878' },
+        { name: 'Light Gray', hex: '#d2d2d2' },
+        { name: 'White', hex: '#ffffff' },
+        { name: 'Deep Red', hex: '#600018' },
+        { name: 'Red', hex: '#ed1c24' },
+        { name: 'Orange', hex: '#ff7f27' },
+        { name: 'Gold', hex: '#f6ab09' },
+        { name: 'Yellow', hex: '#f9dd3b' },
+        { name: 'Light Yellow', hex: '#fffabc' },
+        { name: 'Dark Green', hex: '#0eb968' },
+        { name: 'Green', hex: '#13e67b' },
+        { name: 'Light Green', hex: '#87ff5e' },
+        { name: 'Dark Teal', hex: '#0c816e' },
+        { name: 'Teal', hex: '#10aea6' },
+        { name: 'Light Teal', hex: '#13e1be' },
+        { name: 'Cyan', hex: '#60f7f2' },
+        { name: 'Dark Blue', hex: '#28509e' },
+        { name: 'Blue', hex: '#4093e4' },
+        { name: 'Indigo', hex: '#6b50f6' },
+        { name: 'Light Indigo', hex: '#99b1fb' },
+        { name: 'Dark Purple', hex: '#780c99' },
+        { name: 'Purple', hex: '#aa38b9' },
+        { name: 'Light Purple', hex: '#e09ff9' },
+        { name: 'Dark Pink', hex: '#cb007a' },
+        { name: 'Pink', hex: '#ec1f80' },
+        { name: 'Light Pink', hex: '#f38da9' },
+        { name: 'Dark Brown', hex: '#684634' },
+        { name: 'Brown', hex: '#95682a' },
+        { name: 'Beige', hex: '#f8b277' }
+      ],
+      purchased: [
+        { name: 'Medium Gray', hex: '#aaaaaa' },
+        { name: 'Dark Red', hex: '#a50e1e' },
+        { name: 'Light Red', hex: '#fa8072' },
+        { name: 'Dark Orange', hex: '#e45c1a' },
+        { name: 'Dark Goldenrod', hex: '#9c8431' },
+        { name: 'Goldenrod', hex: '#c5ad31' },
+        { name: 'Light Goldenrod', hex: '#e8d45f' },
+        { name: 'Dark Olive', hex: '#4a6b3a' },
+        { name: 'Olive', hex: '#5a944a' },
+        { name: 'Light Olive', hex: '#84c573' },
+        { name: 'Dark Cyan', hex: '#0f799f' },
+        { name: 'Light Cyan', hex: '#bbfaf2' },
+        { name: 'Light Blue', hex: '#7dc7ff' },
+        { name: 'Dark Indigo', hex: '#4d31b8' },
+        { name: 'Dark Slate Blue', hex: '#4a4284' },
+        { name: 'Slate Blue', hex: '#7a71c4' },
+        { name: 'Light Slate Blue', hex: '#b5aef1' },
+        { name: 'Dark Peach', hex: '#9b5249' },
+        { name: 'Peach', hex: '#d18078' },
+        { name: 'Light Peach', hex: '#fab6a4' },
+        { name: 'Light Brown', hex: '#dba463' },
+        { name: 'Dark Tan', hex: '#7b6352' },
+        { name: 'Tan', hex: '#9c846b' },
+        { name: 'Light Tan', hex: '#d6b594' },
+        { name: 'Dark Beige', hex: '#d18051' },
+        { name: 'Light Beige', hex: '#ffc5a5' },
+        { name: 'Dark Stone', hex: '#6d643f' },
+        { name: 'Stone', hex: '#948c6b' },
+        { name: 'Light Stone', hex: '#cdc59e' },
+        { name: 'Dark Slate', hex: '#333941' },
+        { name: 'Slate', hex: '#6d758d' },
+        { name: 'Light Slate', hex: '#b3b9d1' }
+      ]
+    };
+    
+    let selectedColor = WPLACE_COLORS.free[0].hex;
+
+    // DOM
+    const textInput = document.getElementById('textInput');
+    const generateBtn = document.getElementById('generateBtn');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const statusBanner = document.getElementById('statusBanner');
+    const downloadLink = document.getElementById('downloadLink');
+
+    const controls = {
+      letterSpacing: document.getElementById('letterSpacing'),
+      spaceWidth: document.getElementById('spaceWidth'),
+      lineSpacing: document.getElementById('lineSpacing'),
+      displayScale: document.getElementById('displayScale'),
+      fontHeight: document.getElementById('fontHeight'),
+    };
+
+    const labels = {
+      letterSpacingVal: document.getElementById('letterSpacingVal'),
+      spaceWidthVal: document.getElementById('spaceWidthVal'),
+      lineSpacingVal: document.getElementById('lineSpacingVal'),
+      displayScaleVal: document.getElementById('displayScaleVal'),
+      fontHeightVal: document.getElementById('fontHeightVal'),
+    };
+
+    // 슬라이더 값 레이블
+    function updateSliderLabels() {
+      labels.letterSpacingVal.textContent = controls.letterSpacing.value;
+      labels.spaceWidthVal.textContent = controls.spaceWidth.value;
+      labels.lineSpacingVal.textContent = controls.lineSpacing.value;
+      labels.displayScaleVal.textContent = controls.displayScale.value + 'x';
+      labels.fontHeightVal.textContent = controls.fontHeight.value;
+    }
+
+    // 캔버스 크기 배율
+    function applyCanvasScale() {
+      const scale = parseInt(controls.displayScale.value, 10);
+      canvas.style.width = (canvas.width * scale) + 'px';
+      canvas.style.height = (canvas.height * scale) + 'px';
+    }
+    
+    // Text to Pixel
+    function generatePixelText() {
+      try {
+        const text = textInput.value.toUpperCase();
+        const lines = text.split('\n');
+        
+        const letterSpacing = parseInt(controls.letterSpacing.value, 10);
+        const spaceWidth = parseInt(controls.spaceWidth.value, 10);
+        const lineSpacing = parseInt(controls.lineSpacing.value, 10);
+        const color = selectedColor;
+
+        // --- 스케일링 ---
+        const BASE_FONT_HEIGHT = 7;
+        const BASE_FONT_WIDTH = 5;
+        const newFontHeight = parseInt(controls.fontHeight.value, 10); // 슬라이더 값
+        const newCharWidth = Math.round(BASE_FONT_WIDTH * (newFontHeight / BASE_FONT_HEIGHT));
+        const scaleY = newFontHeight / BASE_FONT_HEIGHT;
+        const scaleX = newCharWidth / BASE_FONT_WIDTH;
+
+        let maxCanvasWidth = 0;
+        let currentCanvasHeight = 0;
+        
+        // 캔버스 크기 계산
+        lines.forEach((line, lineIndex) => {
+          let currentX = 0;
+          
+          if (line.trim() === '' && lines.length > 1) {
+            currentCanvasHeight += newFontHeight + lineSpacing;
+            return;
+          }
+
+          for (const char of line) {
+            if (char === ' ') {
+              currentX += spaceWidth;
+            } else {
+              currentX += newCharWidth + letterSpacing;
+            }
+          }
+          if (line.length > 0 && line[line.length -1] !== ' ') {
+            currentX -= letterSpacing;
+          }
+
+          if (currentX > maxCanvasWidth) {
+            maxCanvasWidth = currentX;
+          }
+          currentCanvasHeight += newFontHeight;
+          if (lineIndex < lines.length - 1) {
+             currentCanvasHeight += lineSpacing;
+          }
+        });
+
+        // 캔버스 크기 설정
+        canvas.width = Math.max(1, maxCanvasWidth);
+        canvas.height = Math.max(1, currentCanvasHeight);
+
+        // 캔버스에 그리기
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = color;
+
+        let currentY = 0;
+        let pixelPaintCount = 0; // 픽셀 카운터 초기화
+
+        lines.forEach((line, lineIndex) => {
+          let currentX = 0;
+          
+          if (line.trim() === '' && lines.length > 1) {
+             currentY += newFontHeight + lineSpacing;
+             return;
+          }
+          
+          for (const char of line) {
+            if (char === ' ') {
+              currentX += spaceWidth;
+              continue;
+            }
+
+            const charData = FONT_DATA[char] || FONT_DATA['DEFAULT'];
+
+            // --- 스케일링 렌더 루프 ---
+            for (let y = 0; y < newFontHeight; y++) {
+              const origY = Math.floor(y / scaleY); // Y 인덱스 계산
+              for (let x = 0; x < newCharWidth; x++) {
+                const origX = Math.floor(x / scaleX); // X 인덱스 계산
+                
+                if (charData[origY] && charData[origY][origX] === '1') {
+                  ctx.fillRect(currentX + x, currentY + y, 1, 1);
+                  pixelPaintCount++;
+                }
+              }
+            }
+            currentX += newCharWidth + letterSpacing;
+          }
+          currentY += newFontHeight + lineSpacing;
+        });
+
+        // 업데이트
+        statusBanner.textContent = `완료 (${canvas.width} x ${canvas.height}) · 픽셀 ${pixelPaintCount}개`;
+        applyCanvasScale();
+        
+        if (canvas.width > 0 && canvas.height > 0) {
+            downloadLink.href = canvas.toDataURL('image/png');
+            downloadLink.style.display = 'inline-block';
+        } else {
+            downloadLink.style.display = 'none';
+        }
+
+      } catch (e) {
+        statusBanner.textContent = `오류: ${e.message}`;
+        console.error(e);
+      }
+    }
+
+    // --- 새 팔레트 생성 및 이벤트 ---
+    function createPalettes() {
+      const freePalette = document.getElementById('free-palette');
+      const purchasedPalette = document.getElementById('purchased-palette');
+      
+      const allSwatches = [];
+
+      const handleSwatchClick = (swatch, hex) => {
+        allSwatches.forEach(s => s.classList.remove('selected'));
+        swatch.classList.add('selected');
+        selectedColor = hex;
+        generatePixelText();
+      };
+
+      const createSwatch = (color) => {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-swatch';
+        swatch.style.backgroundColor = color.hex;
+        swatch.title = `${color.name} (${color.hex})`;
+        swatch.dataset.hex = color.hex;
+        
+        if (color.hex === '#ffffff') { // White 색상 테두리 조정
+            swatch.style.border = '2px solid #dcdcdc';
+        }
+
+        swatch.addEventListener('click', () => handleSwatchClick(swatch, color.hex));
+        allSwatches.push(swatch);
+        return swatch;
+      };
+
+      WPLACE_COLORS.free.forEach(color => {
+        freePalette.appendChild(createSwatch(color));
+      });
+
+      WPLACE_COLORS.purchased.forEach(color => {
+        purchasedPalette.appendChild(createSwatch(color));
+      });
+      
+      if (allSwatches.length > 0) {
+        allSwatches[0].classList.add('selected');
+        selectedColor = allSwatches[0].dataset.hex;
+      }
+    }
+
+    // 이벤트 리스너 바인딩
+    function bindEvents() {
+      generateBtn.addEventListener('click', generatePixelText);
+
+      textInput.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+          e.preventDefault();
+          generatePixelText();
+        }
+      });
+
+      // 슬라이더
+      Object.values(controls).forEach(input => {
+        if (input.type === 'range') {
+          input.addEventListener('input', updateSliderLabels);
+        }
+      });
+      
+      Object.values(controls).forEach(input => {
+         input.addEventListener('input', generatePixelText);
+      });
+      
+      // 팔레트 생성
+      createPalettes();
+    }
+
+    // 초기화
+    updateSliderLabels();
+    bindEvents();
+    generatePixelText();
+
+  </script>
+</body>
+</html>
